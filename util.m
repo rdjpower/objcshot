@@ -21,7 +21,7 @@ NSWindow *_Nonnull shortcutWindow(void) {
   win.title = @"Shortcuts";
   win.minSize = rect.size;
 
-  NSTextField *field = [NSTextField labelWithString:@"Screenshot: ⌘+B\nScreenshot when inactive: ⌘+⇧+B"];
+  NSTextField *field = [NSTextField labelWithString:@"Screenshot: ⌘+B\nScreenshot with inactive: ⌘+⇧+B"];
   field.alignment = NSTextAlignmentCenter;
 
   [win.contentView addSubview:field];

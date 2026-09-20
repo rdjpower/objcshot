@@ -122,6 +122,7 @@ void activeInactiveScreenshot() {
   savePNG(name1, screenshot1);
 
   [NSApp activateIgnoringOtherApps:YES];
+  [NSThread sleepForTimeInterval:0.2];
 
   NSImage *screenshot2 = screenshotWindow(winId);
   if (screenshot2 == NULL)
