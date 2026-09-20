@@ -3,6 +3,7 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <Cocoa/Cocoa.h>
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
+#include <CoreMedia/CoreMedia.h>
 #include <dlfcn.h>
 #include "preferences.h"
 
@@ -104,6 +105,78 @@ CGWindowID getActiveWindow(void) {
   return result;
 }
 
+NSImage *_Nullable screenshotWindowSequoia(CGWindowID wId) {
+  if (@available(macOS 15.0.0, *)) {
+      dispatch_semaphore_t waitForImageSemaphor = dispatch_semaphore_create(0);
+      __block NSImage *_Nullable final = NULL;
+
+      #define DO_DISPATCH(semaphor) (dispatch_semaphore_signal(semaphor))
+
+      void (^handler)(SCShareableContent *, NSError *) =
+          ^(SCShareableContent *shareableContent, NSError *error) {
+              @autoreleasepool {
+              if (!shareableContent || error) {
+                  DO_DISPATCH(waitForImageSemaphor);
+                  return;
+              }
+
+              SCWindow *win = NULL;
+              for (SCWindow *w in shareableContent.windows) {
+                  if (w.windowID != wId)
+                      continue;
+                  win = w;
+                  break;
+              }
+
+              if (!win) {
+                  DO_DISPATCH(waitForImageSemaphor);
+                  return;
+              }
+
+              SCContentFilter *filter = [[[SCContentFilter alloc]
+                  initWithDesktopIndependentWindow:win] autorelease];
+              SCStreamConfiguration *config =
+                  [[[SCStreamConfiguration alloc] init] autorelease];
+
+              config.showsCursor = NO;
+              config.ignoreShadowsDisplay = NO;
+              config.ignoreShadowsSingleWindow = NO;
+              config.minimumFrameInterval = CMTimeMake(1, 60);
+
+              void (^captureHandler)(CGImageRef, NSError *) =
+                  ^(CGImageRef ref,
+                      NSError *_Nullable error) {
+                      if (error ||!ref) {
+                        DO_DISPATCH(waitForImageSemaphor);
+                        return;
+                      }
+
+                      final = [[NSImage alloc]
+                          initWithCGImage:ref
+                                  size:CGSizeMake(
+                                              CGImageGetWidth(ref),
+                                              CGImageGetHeight(ref))];
+                      DO_DISPATCH(waitForImageSemaphor);
+                  };
+
+              [SCScreenshotManager captureImageWithFilter:filter
+                                                  configuration:config
+                                              completionHandler:captureHandler];
+              }
+      };
+
+      [SCShareableContent getShareableContentExcludingDesktopWindows:YES
+                                                  onScreenWindowsOnly:YES
+                                                  completionHandler:handler];
+
+      dispatch_semaphore_wait(waitForImageSemaphor, DISPATCH_TIME_FOREVER);
+      #undef DO_DISPATCH
+      return final;
+  } else {
+      return NULL;
+  }
+}
+
 NSImage *_Nullable screenshotWindowModern(CGWindowID wId) {
   if (@available(macOS 26.0.0, *)) {
     dispatch_semaphore_t waitForImageSemaphor = dispatch_semaphore_create(0);
@@ -197,6 +270,8 @@ NSImage *screenshotWindowLegacy(CGWindowID wId) {
 NSImage *_Nullable screenshotWindow(CGWindowID wId) {
   if (@available(macOS 26.0.0, *)) {
       return screenshotWindowModern(wId);
+  } else if (@available(macOS 15.0.0, *)) {
+      return screenshotWindowSequoia(wId);
   } else {
       return screenshotWindowLegacy(wId);
   }
