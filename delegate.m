@@ -5,7 +5,6 @@
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
-#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 @implementation ObjCShotDelegate
 

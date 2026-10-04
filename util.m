@@ -142,6 +142,9 @@ NSImage *_Nullable screenshotWindowSequoia(CGWindowID wId) {
               config.ignoreShadowsDisplay = NO;
               config.ignoreShadowsSingleWindow = NO;
               config.minimumFrameInterval = CMTimeMake(1, 60);
+              config.scalesToFit = YES;
+              config.width = win.frame.size.width*2;
+              config.height = win.frame.size.height*2;
 
               void (^captureHandler)(CGImageRef, NSError *) =
                   ^(CGImageRef ref,
@@ -151,11 +154,8 @@ NSImage *_Nullable screenshotWindowSequoia(CGWindowID wId) {
                         return;
                       }
 
-                      final = [[NSImage alloc]
-                          initWithCGImage:ref
-                                  size:CGSizeMake(
-                                              CGImageGetWidth(ref),
-                                              CGImageGetHeight(ref))];
+                      final = [[NSImage alloc] initWithCGImage:ref
+                                                          size:win.frame.size];
                       DO_DISPATCH(waitForImageSemaphor);
                   };
 
@@ -210,6 +210,7 @@ NSImage *_Nullable screenshotWindowModern(CGWindowID wId) {
             SCScreenshotConfiguration *config =
                 [[[SCScreenshotConfiguration alloc] init] autorelease];
 
+            config.ignoreClipping = YES;
             config.showsCursor = NO;
             config.ignoreShadows = NO;
 
@@ -252,11 +253,11 @@ typedef CGImageRef _Nullable (*func)(CGRect, CGWindowListOption, CGWindowID, CGW
 
 NSImage *screenshotWindowLegacy(CGWindowID wId) {
   void *handle =
-      dlopen("/System/Library/Frameworks/CoreGraphics.framework", RTLD_LAZY);
-
+      dlopen("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", RTLD_LAZY);
   func f = (func)dlsym(handle, "CGWindowListCreateImage");
-  CGImageRef ref = f(CGRectNull, kCGWindowListOptionAll,
-                                           wId, kCGWindowImageOnlyShadows);
+
+  CGImageRef ref = f(CGRectNull, kCGWindowListOptionIncludingWindow,
+                                           wId, kCGWindowImageDefault);
 
   dlclose(handle);
 
