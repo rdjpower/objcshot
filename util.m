@@ -53,6 +53,7 @@ NSString *_Nonnull getWindowName(CGWindowID wId, NSString*_Nonnull identifier) {
     }
 
     name = [name stringByReplacingOccurrencesOfString:@"/" withString:@""];
+    name = [[NSString stringWithFormat:@"%u_", wId] stringByAppendingString:name];
     name = [name stringByAppendingString:identifier];
     name = [name stringByAppendingString:@".png"];
 

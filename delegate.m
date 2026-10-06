@@ -111,8 +111,8 @@ void activeScreenshot() {
 void activeInactiveScreenshot() {
   CGWindowID winId = getActiveWindow();
 
-  NSString* name1 = getWindowName(winId, @"_0");
-  NSString* name2 = getWindowName(winId, @"_1");
+  NSString *name1 = getWindowName(winId, @"_b1");
+  NSString *name2 = getWindowName(winId, @"_b2");
 
   NSImage *screenshot1 = screenshotWindow(winId);
   if (screenshot1 == NULL)
