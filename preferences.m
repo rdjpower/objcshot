@@ -1,8 +1,10 @@
 #include "preferences.h"
 #import <Cocoa/Cocoa.h>
+#include <objc/runtime.h>
+#include <objc/message.h>
 
 #define DEFAULT_LOCATION ([@"file://" stringByAppendingString: [@"~/Pictures/" stringByExpandingTildeInPath]])
-#define DEFAULT_URL [[NSURL alloc] initWithString:DEFAULT_LOCATION]
+#define DEFAULT_URL [((NSURL *)(((id (*)(id, SEL))objc_msgSend)(objc_getClass("NSURL"), sel_registerName("alloc")))) initWithString:DEFAULT_LOCATION]
 
 Preferences state = (Preferences){0};
 
@@ -24,7 +26,8 @@ void loadState(void) {
       }];
   } else {
       [state.screenshot_location release];
-      state.screenshot_location = [[NSURL alloc] initWithString: screenshot_location];
+      state.screenshot_location = [((NSURL *)(((id (*)(id, SEL))objc_msgSend)(
+          objc_getClass("NSURL"), sel_registerName("alloc")))) initWithString: screenshot_location];
   }
 
   resolveLocation();

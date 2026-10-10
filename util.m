@@ -4,12 +4,20 @@
 #import <Cocoa/Cocoa.h>
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
 #include <CoreMedia/CoreMedia.h>
+#include <objc/runtime.h>
+#include <objc/message.h>
 #include <dlfcn.h>
 #include "preferences.h"
 
 NSWindow *_Nonnull shortcutWindow(void) {
   NSRect rect = NSMakeRect(0, 0, 300, 150);
-  NSWindow *win =
+
+  id NSWindowClass = objc_getClass("NSWindow");
+  SEL alloc_sel = sel_registerName("alloc");
+  NSWindow *win = (NSWindow *)(((id (*)(id, SEL))objc_msgSend)(NSWindowClass, alloc_sel));
+  win = [win autorelease];
+
+  win =
       [[NSWindow alloc] initWithContentRect:rect
                                   styleMask:NSWindowStyleMaskClosable |
                                             NSWindowStyleMaskMiniaturizable |
@@ -262,7 +270,8 @@ NSImage *screenshotWindowLegacy(CGWindowID wId) {
 
   dlclose(handle);
 
-  return [[NSImage alloc]
+  return [((NSImage *)(((id (*)(id, SEL))objc_msgSend)(
+      objc_getClass("NSImage"), sel_registerName("alloc"))))
       initWithCGImage:ref
                  size:CGSizeMake(
                           CGImageGetWidth(ref),

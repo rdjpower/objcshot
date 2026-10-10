@@ -2,6 +2,8 @@
 #include "preferences.h"
 #include "util.h"
 #include "shortcut.h"
+#include <objc/runtime.h>
+#include <objc/message.h>
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
@@ -24,9 +26,19 @@
 
   self.bar = [[NSStatusBar systemStatusBar]
       statusItemWithLength:NSVariableStatusItemLength];
-  self.bar.button.title = @"objcshot";
 
-  NSMenu *menu = [[[NSMenu alloc] init] autorelease];
+  if (!@available(macOS 10.12, *)) {
+      [self.bar setTitle:@"objcshot"];
+  } else {
+      self.bar.button.title = @"objcshot";
+  }
+
+  id NSMenuClass = objc_getClass("NSMenu");
+  SEL alloc_sel = sel_registerName("alloc");
+
+  NSMenu *menu = (NSMenu *)(((id (*)(id, SEL))objc_msgSend)(NSMenuClass, alloc_sel));
+  menu = [[menu init] autorelease];
+
   [menu addItemWithTitle:@"About"
                   action:@selector(aboutWindow:)
            keyEquivalent:@""];
@@ -69,7 +81,12 @@
   @autoreleasepool {
     resolveLocation();
 
-    NSOpenPanel *panel = [[[NSOpenPanel alloc] init] autorelease];
+    id NSOpenPanelClass = objc_getClass("NSOpenPanel");
+    SEL alloc_sel = sel_registerName("alloc");
+
+    NSOpenPanel *panel = (NSOpenPanel *)(((id (*)(id, SEL))objc_msgSend)(NSOpenPanelClass, alloc_sel));
+    panel = [[panel init] autorelease];
+
     panel.title = @"Set Screenshot Folder";
     panel.allowsMultipleSelection = NO;
     panel.canChooseDirectories = YES;
