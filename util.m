@@ -54,9 +54,9 @@ NSString *_Nonnull getWindowName(CGWindowID wId, NSString*_Nonnull identifier) {
     NSString* name = @"Window";
 
     for (NSDictionary *w in nsArrayWindowList) {
-      if ([w[(id)kCGWindowNumber] unsignedIntValue] != wId)
+      if ([[w objectForKey:(id)kCGWindowNumber] unsignedIntValue] != wId)
         continue;
-      name = (__bridge NSString *)w[(id)kCGWindowName];
+      name = (__bridge NSString *)[w objectForKey:(id)kCGWindowName];
       break;
     }
 
@@ -97,16 +97,18 @@ CGWindowID getActiveWindow(void) {
       kCGNullWindowID);
   NSArray* windows = (__bridge NSArray*)_win;
 
-  NSRunningApplication *frontMostApp =
-      [[NSWorkspace sharedWorkspace] frontmostApplication];
+  NSRunningApplication *frontMostApp = [[[[NSWorkspace sharedWorkspace]
+      runningApplications]
+      filteredArrayUsingPredicate:[NSPredicate
+                                      predicateWithFormat:@"active == YES"]] objectAtIndex:0];
   pid_t process = [frontMostApp processIdentifier];
 
   for (NSDictionary *info in windows) {
-    pid_t winpId = [info[(id)kCGWindowOwnerPID] intValue];
+    pid_t winpId = [[info objectForKey:(id)kCGWindowOwnerPID] intValue];
     if (process != winpId)
       continue;
 
-    result = (CGWindowID)[info[(id)kCGWindowNumber] unsignedIntValue];
+    result = (CGWindowID)[[info objectForKey:(id)kCGWindowNumber] unsignedIntValue];
     break;
   }
 
@@ -261,8 +263,16 @@ NSImage *_Nullable screenshotWindowModern(CGWindowID wId) {
 typedef CGImageRef _Nullable (*func)(CGRect, CGWindowListOption, CGWindowID, CGWindowImageOption);
 
 NSImage *screenshotWindowLegacy(CGWindowID wId) {
+  const char *loc;
+  if (@available(macOS 10.8.0, *)) {
+    loc = "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics";
+  } else {
+    loc = "/System/Library/Frameworks/ApplicationServices.framework/Versions/A/"
+          "Frameworks/CoreGraphics.framework/CoreGraphics";
+  }
+
   void *handle =
-      dlopen("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", RTLD_LAZY);
+      dlopen(loc, RTLD_LAZY);
   func f = (func)dlsym(handle, "CGWindowListCreateImage");
 
   CGImageRef ref = f(CGRectNull, kCGWindowListOptionIncludingWindow,
@@ -295,9 +305,9 @@ void reactivateApp(CGWindowID wId) {
     pid_t processId;
 
     for (NSDictionary *w in nsArrayWindowList) {
-      if ([w[(id)kCGWindowNumber] unsignedIntValue] != wId)
+      if ([[w objectForKey:(id)kCGWindowNumber] unsignedIntValue] != wId)
         continue;
-      processId = [w[(id)kCGWindowOwnerPID] intValue];
+      processId = [[w objectForKey:(id)kCGWindowOwnerPID] intValue];
       break;
     }
 
